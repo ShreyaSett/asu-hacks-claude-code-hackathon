@@ -4,6 +4,7 @@ export function speakText(text: string, onEnd?: () => void): SpeechSynthesisUtte
     return null;
   }
   window.speechSynthesis.cancel();
+  window.speechSynthesis.resume();
   const u = new SpeechSynthesisUtterance(text);
   u.rate = 0.92;
   u.pitch = 1.05;
@@ -32,7 +33,18 @@ export type SpeechRecCallbacks = {
 };
 
 export function startListening(cb: SpeechRecCallbacks): SpeechRecognition | null {
-  const SR = window.SpeechRecognition || (window as unknown as { webkitSpeechRecognition?: typeof SpeechRecognition }).webkitSpeechRecognition;
+  if (typeof window === "undefined") {
+    cb.onError?.("Voice input is not available in this environment.");
+    return null;
+  }
+  if (!window.isSecureContext) {
+    cb.onError?.("Voice input needs HTTPS (or localhost).");
+    return null;
+  }
+
+  const SR =
+    window.SpeechRecognition ||
+    (window as unknown as { webkitSpeechRecognition?: typeof SpeechRecognition }).webkitSpeechRecognition;
   if (!SR) {
     cb.onError?.("Voice input is not supported in this browser.");
     return null;
@@ -45,8 +57,26 @@ export function startListening(cb: SpeechRecCallbacks): SpeechRecognition | null
     const t = ev.results[0]?.[0]?.transcript?.trim();
     if (t) cb.onResult(t);
   };
-  rec.onerror = (ev) => cb.onError?.(ev.error || "speech error");
+  rec.onerror = (ev) => {
+    const code = ev.error || "speech error";
+    const msg =
+      code === "not-allowed" || code === "service-not-allowed"
+        ? "Microphone permission was blocked. Allow mic access in your browser settings."
+        : code === "audio-capture"
+          ? "No microphone was found."
+          : code === "no-speech"
+            ? "I did not hear anything. Try speaking a bit louder and closer to the mic."
+            : code === "network"
+              ? "Speech service network error. Check internet and try again."
+              : `Voice input error: ${code}`;
+    cb.onError?.(msg);
+  };
   rec.onend = () => cb.onEnd?.();
-  rec.start();
+  try {
+    rec.start();
+  } catch (e) {
+    cb.onError?.(e instanceof Error ? e.message : "Could not start voice input.");
+    return null;
+  }
   return rec;
 }

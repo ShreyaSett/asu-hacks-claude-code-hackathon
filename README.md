@@ -36,6 +36,8 @@ Web app for kids: chat with **Cosmo**, who answers with **live space data** (ISS
 
    This serves the Vite app and `/api/cosmo` on one port (often `http://localhost:3000`).
 
+   If the terminal says **“Requested port 3000 is already in use”**, Vercel picks another port (e.g. **3001**). Open the exact URL it prints after **“Ready! Available at”** — `http://localhost:3000` may then be a different app or an empty page.
+
 4. **UI only** (API calls will fail unless you proxy):
 
    ```bash
