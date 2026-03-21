@@ -1,0 +1,26 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --font-sans: "DM Sans", system-ui, sans-serif;
+  --font-display: "Outfit", system-ui, sans-serif;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  font-family: var(--font-sans);
+  background: radial-gradient(ellipse 120% 80% at 50% -20%, #1e1b4b 0%, #0a0e1a 45%, #050810 100%);
+  color: #e2e8f0;
+}
+
+/* Leaflet z-index under modals */
+.leaflet-container {
+  font-family: var(--font-sans);
+  border-radius: 0.75rem;
+}
