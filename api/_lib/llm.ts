@@ -1,5 +1,5 @@
-import { anthropicMessages } from "./anthropic";
-import type { FetchFocus, LiveSpaceBundle } from "./spaceData";
+import { anthropicMessages } from "./anthropic.js";
+import type { FetchFocus, LiveSpaceBundle } from "./spaceData.js";
 
 export type LlmProviderName = "anthropic" | "openai" | "gemini" | "mock";
 
