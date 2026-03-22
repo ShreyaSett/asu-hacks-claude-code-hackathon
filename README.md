@@ -1,76 +1,170 @@
-# Cosmo — AI space companion
+# Cosmo — AI Space Companion for Kids
 
-Web app for kids: chat with **Cosmo**, who answers with **live space data** (ISS position, people in space, NASA picture of the day, Mars rover photos) when the question needs it, and plain explanations when it does not. **Web Speech API** for voice in and out. **No accounts**, name/age only in **localStorage** on the device.
+Cosmo is a child-friendly space companion web app built for **ASU Hacks**. Kids chat with Cosmo, who pulls **live space data** (ISS position, crew in space, NASA picture of the day, Mars rover photos) when the question calls for it, and gives clear, age-appropriate explanations when it doesn't. No accounts, no sign-up — everything private to the device.
+
+---
+
+## Features
+
+### 💬 Chat with Cosmo
+Ask anything about space and Cosmo answers in simple, enthusiastic language tuned for ~age 7. Supports typed input, 🎤 voice input (Web Speech API), and 🔊 read-aloud replies.
+
+### 🧠 Space Quiz Adventure
+After a real question, a **"Quiz me on this!"** button appears. Click it to get a 3-question AI-generated multiple choice quiz on the topic, with animated correct/wrong feedback and a score screen.
+
+### 🌙 Tonight's Sky
+Shows the current **moon phase** (name, emoji, illumination %, days until full), the **live ISS position** (lat/lng from Open-Notify), and — if you share your location — an AI-generated description of what planets and stars are visible tonight from your city.
+
+### 📓 Space Journal
+Save any chat session as a named **mission log** stored in your browser's localStorage. Browse, rename, expand, and delete past missions from the Journal panel.
+
+### 🃏 Did You Know?
+Six flip cards below the chat covering black holes, the ISS, Mars sunsets, Jupiter's storm, and more — tap any card to reveal the full explanation.
+
+### 📺 Watch & Explore
+A curated row of NASA / space YouTube links (Solar System 101, Black Holes, Artemis launch, ISS life, Mars 4K, Universe explainer) with thumbnails — opens on YouTube.
+
+### ✨ Animated intro
+A flying Cosmo astronaut greets new visitors with a speech bubble intro. Runs once per tab session; skip any time.
+
+---
 
 ## Stack
 
-- **React + Vite + TypeScript + Tailwind**
-- **Vercel** serverless API: `api/cosmo.ts`
-- **LLM** (pick one): **Anthropic Claude**, **OpenAI** (`gpt-4o-mini`), or **Google Gemini** — intent + Cosmo voice. If no key is set, the app runs in **demo mode** (live NASA / ISS data + short template replies).
-- **Open Notify** — ISS position, humans in space
-- **NASA** — APOD + Mars rover latest (optional API key)
-- **OpenStreetMap Nominatim** — rough “flying over” country/region
-- **Leaflet** — ISS map in the side panel
+| Layer | Tech |
+|---|---|
+| Frontend | React + Vite + TypeScript + Tailwind CSS |
+| API | Vercel serverless functions (`api/`) |
+| LLM | Anthropic Claude (recommended), OpenAI, or Google Gemini |
+| Space data | Open-Notify (ISS + crew), NASA APOD + Mars rover, OpenStreetMap Nominatim |
+| Map | Leaflet (ISS position) |
+| Storage | localStorage (journal, welcome flag) |
+| Audio | Web Speech API (TTS + STT), NASA audio clips (audio-first mode only) |
 
-## Local development
+---
 
-1. **Install**
+## Quickstart
 
-   ```bash
-   npm install
-   ```
+### 1. Install
 
-2. **Environment** — copy `.env.example` to `.env`. For full Cosmo, set **one** of:
+```bash
+npm install
+```
 
-   - `ANTHROPIC_API_KEY`, or
-   - `OPENAI_API_KEY` (optional `OPENAI_MODEL`, default `gpt-4o-mini`), or
-   - `GEMINI_API_KEY` from [Google AI Studio](https://aistudio.google.com/apikey) (optional `GEMINI_MODEL`)
+### 2. Set up environment variables
 
-   With **no** key, the API still works in **demo mode** (live space fetches + simple replies). Use `COSMO_LLM_PROVIDER` if multiple keys exist. Set `COSMO_MOCK_LLM=true` to force demo mode.
+Copy `.env.example` to `.env` and add **one** AI key:
 
-3. **Run API + UI together** (recommended):
+```bash
+# Recommended — free $5 credit on first signup at console.anthropic.com
+ANTHROPIC_API_KEY=sk-ant-...
 
-   ```bash
-   npx vercel dev
-   ```
+# Or Google Gemini (free tier) — aistudio.google.com/apikey
+# GEMINI_API_KEY=AIza...
 
-   This serves the Vite app and `/api/cosmo` on one port (often `http://localhost:3000`).
+# Or OpenAI
+# OPENAI_API_KEY=sk-...
+```
 
-   If the terminal says **“Requested port 3000 is already in use”**, Vercel picks another port (e.g. **3001**). Open the exact URL it prints after **“Ready! Available at”** — `http://localhost:3000` may then be a different app or an empty page.
+With **no key** the app runs in **demo mode**: live ISS/NASA data still works, but Cosmo's replies are short templates.
 
-4. **UI only** (API calls will fail unless you proxy):
+### 3. Run locally
 
-   ```bash
-   npm run dev
-   ```
+```bash
+npx vercel dev
+```
 
-   The Vite config proxies `/api` to `http://127.0.0.1:3000`. Run `npx vercel dev` in another terminal on port 3000, or deploy and set `vite.config.ts` proxy target to your preview URL.
+This serves both the Vite frontend and all `/api` routes on one port (usually `http://localhost:3000`). Open the exact URL printed after **"Ready! Available at"**.
 
-## Deploy on Vercel
+> **UI only** (no API): `npm run dev` — Vite proxies `/api` to `http://127.0.0.1:3000`, so run `npx vercel dev` in a second terminal on port 3000 first.
 
-1. Push this folder to GitHub and import the repo in Vercel, **or** `npx vercel` from this directory.
-2. Add environment variables: one of `ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, or `GEMINI_API_KEY` (optional `NASA_API_KEY`, `COSMO_LLM_PROVIDER`, `TINYFISH_*`).
+---
 
-## TinyFish (optional)
+## Deploy to Vercel
 
-If you have a TinyFish HTTP integration, set `TINYFISH_API_URL` and `TINYFISH_API_KEY`. The template posts to `{TINYFISH_API_URL}/run` with `{ goal, urls }` — **adjust** `api/_lib/spaceData.ts` → `maybeTinyFish` to match the real API.
+1. Push this folder to GitHub and import the repo at [vercel.com](https://vercel.com), **or** run `npx vercel` from this directory.
+2. Add environment variables in the Vercel dashboard:
+   - Required: one of `ANTHROPIC_API_KEY`, `GEMINI_API_KEY`, or `OPENAI_API_KEY`
+   - Optional: `NASA_API_KEY`, `ANTHROPIC_MODEL`, `COSMO_LLM_PROVIDER`, `COSMO_MOCK_LLM`, `TINYFISH_*`
 
-### NASA sounds (TinyFish + LLM)
+---
 
-When TinyFish is configured, each chat can also:
+## Environment variables reference
 
-1. Ask TinyFish to extract a JSON list of clips from [NASA audio & ringtones](https://www.nasa.gov/audio-and-ringtones/) (goal in `api/_lib/nasaSoundCurator.ts`).
-2. **LLM picks** the best clip for the child’s question (or a **keyword heuristic** in demo / mock mode).
-3. The API returns `meta.nasaSound` `{ title, url }` (URLs must be `https` on `*.nasa.gov`).
-4. The **browser plays** the clip with `<audio>` while **Audio-first mode** still uses the **Web Speech API** for Cosmo’s spoken reply (clip volume is lowered so voice stays clear).
+| Variable | Default | Description |
+|---|---|---|
+| `ANTHROPIC_API_KEY` | — | Anthropic Claude key (checked first) |
+| `ANTHROPIC_MODEL` | `claude-3-5-haiku-20241022` | Any Claude model ID |
+| `OPENAI_API_KEY` | — | OpenAI key (fallback) |
+| `OPENAI_MODEL` | `gpt-4o-mini` | Any OpenAI chat model |
+| `GEMINI_API_KEY` | — | Google AI Studio key (fallback) |
+| `GEMINI_MODEL` | `gemini-2.0-flash` | Any Gemini model |
+| `COSMO_LLM_PROVIDER` | auto | Force `anthropic` / `openai` / `gemini` / `mock` |
+| `COSMO_MOCK_LLM` | `false` | Set `true` to disable LLM calls entirely |
+| `NASA_API_KEY` | `DEMO_KEY` | Higher rate limits for NASA APOD + Mars |
+| `TINYFISH_API_URL` | — | Optional web-scraping agent base URL |
+| `TINYFISH_API_KEY` | — | Bearer token for TinyFish agent |
+| `TINYFISH_NASA_SOUNDS` | `true` | Fetch NASA audio clips via TinyFish |
 
-Set `TINYFISH_NASA_SOUNDS=false` to turn this off. **Stop voice** stops both TTS and the NASA clip.
+---
+
+## Project structure
+
+```
+├── api/
+│   ├── cosmo.ts              # Main chat + quiz endpoints
+│   ├── quiz.ts               # Quiz generation endpoint
+│   └── _lib/
+│       ├── llm.ts            # Provider resolution + completions
+│       ├── anthropic.ts      # Anthropic Messages API
+│       ├── prompts.ts        # System prompts
+│       ├── spaceData.ts      # ISS / APOD / Mars / TinyFish fetches
+│       └── nasaSoundCurator.ts  # NASA audio selection
+├── src/
+│   ├── components/
+│   │   ├── Chat.tsx          # Main chat UI + quiz trigger
+│   │   ├── CosmoBuddy.tsx    # Cosmo helper widget + prompt chips
+│   │   ├── CosmoWelcomeOverlay.tsx  # Fly-in intro animation
+│   │   ├── DidYouKnow.tsx    # Flip cards
+│   │   ├── FeatureBar.tsx    # Bottom feature pill bar
+│   │   ├── NasaVideoLinks.tsx       # YouTube link cards
+│   │   ├── SpaceJournalModal.tsx    # Mission log
+│   │   ├── SpaceQuiz.tsx            # Animated quiz UI
+│   │   ├── SpaceWordBadge.tsx       # Space Word of the Day
+│   │   ├── TonightsSkyPanel.tsx     # Moon + ISS + planets
+│   │   └── VisualPanel.tsx          # APOD / ISS map / Mars photo
+│   └── lib/
+│       ├── api.ts            # fetch wrappers
+│       ├── astronomy.ts      # Moon phase math
+│       ├── journal.ts        # localStorage mission log CRUD
+│       ├── spaceSounds.ts    # Ambient audio + sfx
+│       ├── speech.ts         # TTS / STT / NASA audio playback
+│       ├── spaceWordOfDay.ts # Daily space word
+│       └── types.ts          # Shared TypeScript types
+└── public/
+    └── astrocutie.svg        # Cosmo mascot
+```
+
+---
 
 ## Accessibility
 
-- Skip link, `aria-live` chat log, labeled controls
-- **Audio-first mode** in the header hides map/images; explanations stay in text (Cosmo is prompted to describe visuals in words)
+- Skip-to-chat link, `aria-live` chat log, labeled form controls throughout
+- **Audio-first mode** hides maps and images; Cosmo is prompted to describe visuals in words instead
+- **Reduced-motion** respected for all CSS animations (intro fly-in, wobble, quiz transitions)
+
+---
+
+## Built with Claude
+
+Cosmo was built entirely using **Claude Sonnet** as the development intelligence — every component, API route, and design decision was architected through Claude via Cursor. Claude's reasoning shaped the educational prompt design, the age-adaptive response system, and the multi-source space data pipeline.
+
+The app is provider-agnostic by design — it supports Claude's API, OpenAI, and Gemini interchangeably, so educators and developers can plug in whichever model they have access to. The prompts, the Cosmo personality, and the kid-friendly system instructions were all designed specifically around Claude's capabilities.
+
+Claude isn't just a tool we used to build this — it's the intended brain of Cosmo.
+
+---
 
 ## License
 
-Hackathon / educational use — adjust as needed for your team.
+Hackathon / educational use. Built for ASU Hacks 2026.

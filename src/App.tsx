@@ -9,7 +9,6 @@ import { FeatureBar, type ActiveFeature } from "./components/FeatureBar";
 import { FloatingAstronaut } from "./components/FloatingAstronaut";
 import { NasaVideoLinks } from "./components/NasaVideoLinks";
 import { SpaceChrome } from "./components/SpaceChrome";
-import { SpaceDrawingModal } from "./components/SpaceDrawingModal";
 import { SpaceJournalModal } from "./components/SpaceJournalModal";
 import { TonightsSkyPanel } from "./components/TonightsSkyPanel";
 import { DidYouKnow } from "./components/DidYouKnow";
@@ -150,7 +149,6 @@ export default function App() {
 
       <FeatureBar active={activeFeature} onToggle={setActiveFeature} />
 
-      {activeFeature === "draw" && <SpaceDrawingModal onClose={() => setActiveFeature(null)} />}
       {activeFeature === "sky" && <TonightsSkyPanel onClose={() => setActiveFeature(null)} />}
       {activeFeature === "journal" && (
         <SpaceJournalModal currentMessages={chatMessages} onClose={() => setActiveFeature(null)} />

@@ -1,4 +1,4 @@
-type ActiveFeature = "draw" | "sky" | "journal" | null;
+type ActiveFeature = "sky" | "journal" | null;
 
 type Props = {
   active: ActiveFeature;
@@ -6,7 +6,6 @@ type Props = {
 };
 
 const FEATURES: { id: Exclude<ActiveFeature, null>; emoji: string; label: string }[] = [
-  { id: "draw", emoji: "🎨", label: "Draw" },
   { id: "sky", emoji: "🌙", label: "Tonight's Sky" },
   { id: "journal", emoji: "📓", label: "Journal" },
 ];
