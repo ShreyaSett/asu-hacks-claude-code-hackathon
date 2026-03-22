@@ -5,20 +5,20 @@ import {
   mockCosmoReply,
   mockParentSummary,
   resolveLlm,
-} from "./_lib/llm";
+} from "./_lib/llm.js";
 import { CLASSIFIER_SYSTEM, buildCosmoSystem, liveDataBlock } from "./_lib/prompts";
 import {
   FALLBACK_NASA_SOUND_CATALOG,
   curateNasaSoundForQuestion,
   fetchNasaSoundsViaTinyFish,
   mergeNasaSoundPools,
-} from "./_lib/nasaSoundCurator";
+} from "./_lib/nasaSoundCurator.js";
 import {
   type FetchFocus,
   type LiveSpaceBundle,
   gatherLiveData,
   maybeTinyFish,
-} from "./_lib/spaceData";
+} from "./_lib/spaceData.js";
 
 function tinyFishConfigured(): boolean {
   return Boolean(process.env.TINYFISH_API_URL?.trim() && process.env.TINYFISH_API_KEY?.trim());
