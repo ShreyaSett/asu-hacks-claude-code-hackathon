@@ -155,6 +155,18 @@ This serves both the Vite frontend and all `/api` routes on one port (usually `h
 
 ---
 
+## TinyFish (optional web agent)
+
+Cosmo integrates with **TinyFish** — a web-scraping agent — as a progressive enhancement layer. Set `TINYFISH_API_URL` and `TINYFISH_API_KEY` in your environment to enable it; without them the app works identically, just without the two extras below.
+
+**Live web context for answers.** When a child asks a realtime question, Cosmo's intent classifier can identify relevant URLs (e.g. a NASA news page). TinyFish scrapes those pages and returns a text summary, which is injected into the LLM prompt as optional context. This lets Cosmo cite fresher information than its training data alone — without hallucinating sources.
+
+**NASA audio clip matching.** TinyFish visits `nasa.gov/audio-and-ringtones/` and extracts a structured JSON list of playable audio clips. The LLM then picks the clip most relevant to what the child just asked — so if they ask about Mars, they might hear the Perseverance rover recording wind on the Martian surface. The clip plays in the background during **Audio-first mode**. If TinyFish is not configured, a curated fallback catalog of six verified NASA clips (Artemis launch, Mars wind, Ingenuity helicopter, Ganymede flyby, and more) is used instead.
+
+Set `TINYFISH_NASA_SOUNDS=false` to disable audio matching while keeping the web-context feature active.
+
+---
+
 ## Built with Claude
 
 Cosmo was built entirely using **Claude Sonnet** as the development intelligence — every component, API route, and design decision was architected through Claude via Cursor. Claude's reasoning shaped the educational prompt design, the age-adaptive response system, and the multi-source space data pipeline.
