@@ -48,3 +48,15 @@ export type ChatMessage = {
   role: "user" | "cosmo";
   text: string;
 };
+
+export type QuizQuestion = {
+  q: string;
+  opts: [string, string, string, string];
+  correct: number;
+  funFact: string;
+};
+
+export type QuizData = {
+  topic: string;
+  questions: QuizQuestion[];
+};

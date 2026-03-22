@@ -21,6 +21,16 @@ export function resolveLlm(): ResolvedLlm {
     return { provider: "mock", model: "mock" };
   }
 
+  if (forced === "anthropic" || (!forced && process.env.ANTHROPIC_API_KEY)) {
+    const key = process.env.ANTHROPIC_API_KEY;
+    if (!key) throw new Error("COSMO_LLM_PROVIDER=anthropic but ANTHROPIC_API_KEY is missing");
+    return {
+      provider: "anthropic",
+      key,
+      model: process.env.ANTHROPIC_MODEL || "claude-3-5-haiku-20241022",
+    };
+  }
+
   if (forced === "openai" || (!forced && process.env.OPENAI_API_KEY)) {
     const key = process.env.OPENAI_API_KEY;
     if (!key) throw new Error("COSMO_LLM_PROVIDER=openai but OPENAI_API_KEY is missing");
@@ -38,16 +48,6 @@ export function resolveLlm(): ResolvedLlm {
       provider: "gemini",
       key,
       model: process.env.GEMINI_MODEL || "gemini-2.0-flash",
-    };
-  }
-
-  if (forced === "anthropic" || process.env.ANTHROPIC_API_KEY) {
-    const key = process.env.ANTHROPIC_API_KEY;
-    if (!key) throw new Error("COSMO_LLM_PROVIDER=anthropic but ANTHROPIC_API_KEY is missing");
-    return {
-      provider: "anthropic",
-      key,
-      model: process.env.ANTHROPIC_MODEL || "claude-sonnet-4-20250514",
     };
   }
 

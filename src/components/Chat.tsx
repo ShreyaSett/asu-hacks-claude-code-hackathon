@@ -6,6 +6,7 @@ import { playNasaSound, speakText, startListening, stopSpeaking } from "@/lib/sp
 import { ConfettiBurst } from "./ConfettiBurst";
 import { ConstellationLayer } from "./ConstellationLayer";
 import { CosmoBuddy } from "./CosmoBuddy";
+import { SpaceQuiz } from "./SpaceQuiz";
 import { VisualPanel } from "./VisualPanel";
 import { WarpWait } from "./WarpWait";
 
@@ -20,9 +21,10 @@ const emptyVisuals: CosmoVisuals = { apod: null, iss: null, mars: null };
 
 type Props = {
   audioMode: boolean;
+  onMessagesChange?: (msgs: ChatMessage[]) => void;
 };
 
-export function Chat({ audioMode }: Props) {
+export function Chat({ audioMode, onMessagesChange }: Props) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
@@ -33,6 +35,8 @@ export function Chat({ audioMode }: Props) {
   const [parentText, setParentText] = useState("");
   const [parentLoading, setParentLoading] = useState(false);
   const [llmProvider, setLlmProvider] = useState<string | null>(null);
+  const [quizTopic, setQuizTopic] = useState<string | null>(null);
+  const [lastUserQuestion, setLastUserQuestion] = useState<string>("");
   const liveRef = useRef<HTMLDivElement>(null);
   const typingBlipTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [confettiTick, setConfettiTick] = useState(0);
@@ -56,18 +60,27 @@ export function Chat({ audioMode }: Props) {
     );
   }, [messages, input]);
 
-  const pushMessage = useCallback((role: "user" | "cosmo", text: string) => {
-    setMessages((m) => [...m, { id: uid(), role, text }]);
-  }, []);
+  const pushMessage = useCallback(
+    (role: "user" | "cosmo", text: string) => {
+      setMessages((m) => {
+        const updated = [...m, { id: uid(), role, text }];
+        onMessagesChange?.(updated);
+        return updated;
+      });
+    },
+    [onMessagesChange]
+  );
 
   const runSend = useCallback(
     async (text: string) => {
       const trimmed = text.trim();
       if (!trimmed || loading) return;
       setError(null);
+      setQuizTopic(null);
       const words = trimmed.split(/\s+/).filter(Boolean);
       const goodQuestion =
         trimmed.length > 18 || /\?/.test(trimmed) || words.length >= 6 || /\b(why|how|what if)\b/i.test(trimmed);
+      setLastUserQuestion(goodQuestion ? trimmed : "");
       if (goodQuestion) setConfettiTick((n) => n + 1);
 
       pushMessage("user", trimmed);
@@ -83,8 +96,8 @@ export function Chat({ audioMode }: Props) {
         setVisuals(res.visuals);
         if (res.meta.llmProvider) setLlmProvider(res.meta.llmProvider);
         const ns = res.meta.nasaSound;
-        if (ns?.url) {
-          playNasaSound(ns.url, audioMode ? 0.22 : 0.38);
+        if (ns?.url && audioMode) {
+          playNasaSound(ns.url, 0.22);
         }
         if (audioMode) {
           setSpeaking(true);
@@ -163,17 +176,12 @@ export function Chat({ audioMode }: Props) {
         )}
 
         <div
-          className="mb-3 min-h-[140px] max-h-[min(32vh,240px)] overflow-y-auto rounded-2xl border border-white/10 bg-cosmic-deep/40 p-3 md:min-h-[160px] md:max-h-[min(36vh,280px)]"
+          className={`mb-3 max-h-[min(22vh,180px)] overflow-y-auto rounded-2xl border border-white/10 bg-cosmic-deep/40 p-3 md:max-h-[min(24vh,200px)] ${messages.length === 0 && !loading ? "hidden" : ""}`}
           role="log"
           aria-live="polite"
           aria-relevant="additions"
           aria-label="Conversation with Cosmo"
         >
-          {messages.length === 0 && (
-            <p className="text-slate-400">
-              Say hi! Try: &quot;Is anyone in space right now?&quot; or &quot;What is a black hole?&quot;
-            </p>
-          )}
           <ul className="flex flex-col gap-3">
             {messages.map((m) => (
               <li key={m.id}>
@@ -196,20 +204,35 @@ export function Chat({ audioMode }: Props) {
           <div ref={liveRef} />
         </div>
 
+        {/* Quiz trigger — appears after the last Cosmo reply */}
+        {!loading && lastUserQuestion && messages.length > 0 && messages[messages.length - 1]?.role === "cosmo" && !quizTopic && (
+          <button
+            type="button"
+            onClick={() => setQuizTopic(lastUserQuestion || "space")}
+            className="mb-3 flex w-full items-center justify-center gap-2 rounded-xl border border-fuchsia-400/30 bg-fuchsia-950/30 py-2 text-sm font-medium text-fuchsia-200 transition hover:bg-fuchsia-900/40"
+          >
+            🧠 Quiz me on this!
+          </button>
+        )}
+
+        {quizTopic && (
+          <SpaceQuiz topic={quizTopic} onClose={() => setQuizTopic(null)} />
+        )}
+
         {error && (
           <p className="mb-3 rounded-lg border border-red-500/40 bg-red-950/40 px-3 py-2 text-sm text-red-200" role="alert">
             {error}
           </p>
         )}
 
-        <form onSubmit={onSubmit} className="flex flex-col gap-3 sm:flex-row sm:items-end">
-          <div className="min-w-0 flex-1">
+        <form onSubmit={onSubmit} className="flex flex-col gap-3">
+          <div className="w-full">
             <label htmlFor={inputId} className="sr-only">
               Message to Cosmo
             </label>
             <textarea
               id={inputId}
-              rows={1}
+              rows={5}
               value={input}
               onChange={(e) => {
                 const v = e.target.value;
@@ -226,7 +249,7 @@ export function Chat({ audioMode }: Props) {
                 }
               }}
               placeholder="Ask Cosmo anything about space…"
-              className="w-full resize-y rounded-xl border border-white/15 bg-cosmic-void px-3 py-2 text-sm text-white outline-none ring-cosmic-accent placeholder:text-slate-500 focus:ring-2"
+              className="w-full min-h-[7rem] resize-y rounded-2xl border border-white/20 bg-cosmic-void px-4 py-3 text-base text-white outline-none ring-cosmic-accent placeholder:text-slate-400 focus:border-cosmic-accent/60 focus:ring-2"
               disabled={loading}
             />
           </div>

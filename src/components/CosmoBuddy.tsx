@@ -52,7 +52,7 @@ export function CosmoBuddy({ mood, onTryPrompt }: Props) {
         </div>
 
         <div className="min-w-0">
-          <p className="font-display text-sm font-semibold text-cosmic-star">Baby Cosmo</p>
+          <p className="font-display text-sm font-semibold text-cosmic-star">Cosmo</p>
           <p className="mt-1 text-sm text-slate-200">{copy.line}</p>
         </div>
       </div>

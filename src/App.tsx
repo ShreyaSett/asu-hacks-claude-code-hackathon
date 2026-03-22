@@ -1,12 +1,36 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Chat } from "./components/Chat";
+import {
+  CosmoWelcomeOverlay,
+  markCosmoWelcomeSeen,
+  shouldSkipWelcomeOverlay,
+} from "./components/CosmoWelcomeOverlay";
+import { FeatureBar, type ActiveFeature } from "./components/FeatureBar";
 import { FloatingAstronaut } from "./components/FloatingAstronaut";
+import { NasaVideoLinks } from "./components/NasaVideoLinks";
 import { SpaceChrome } from "./components/SpaceChrome";
+import { SpaceDrawingModal } from "./components/SpaceDrawingModal";
+import { SpaceJournalModal } from "./components/SpaceJournalModal";
+import { TonightsSkyPanel } from "./components/TonightsSkyPanel";
 import { DidYouKnow } from "./components/DidYouKnow";
 import { SpaceWordBadge } from "./components/SpaceWordBadge";
 import { ensureAudio, setAmbienceOn } from "./lib/spaceSounds";
+import type { ChatMessage } from "./lib/types";
 
 export default function App() {
+  const [welcomeDone, setWelcomeDone] = useState(() => shouldSkipWelcomeOverlay());
+  const finishWelcome = useCallback(() => {
+    markCosmoWelcomeSeen();
+    setWelcomeDone(true);
+  }, []);
+
+  const handleWelcomeComplete = useCallback(() => {
+    setWelcomeDone(true);
+  }, []);
+
+  const [activeFeature, setActiveFeature] = useState<ActiveFeature>(null);
+  const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
+
   const [audioMode, setAudioMode] = useState(false);
   const [ambience, setAmbience] = useState(false);
   const [apodUrl, setApodUrl] = useState<string | null>(null);
@@ -47,20 +71,30 @@ export default function App() {
       <div className="space-stars" aria-hidden="true" />
       <div className="space-nebula" aria-hidden="true" />
 
-      <div className="relative z-10">
+      {!welcomeDone && <CosmoWelcomeOverlay onComplete={handleWelcomeComplete} />}
+
+      <a
+        href="#main"
+        onClick={(e) => {
+          if (!welcomeDone) {
+            e.preventDefault();
+            finishWelcome();
+            requestAnimationFrame(() => document.getElementById("main")?.focus());
+          }
+        }}
+        className="sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[110] focus:block focus:rounded-lg focus:bg-cosmic-accent focus:px-4 focus:py-2 focus:text-white focus:outline-none focus:ring-2 focus:ring-white"
+      >
+        Skip to chat
+      </a>
+
+      <div className="relative z-10" aria-hidden={!welcomeDone}>
         <SpaceWordBadge />
-        <FloatingAstronaut />
-        <a
-          href="#main"
-          className="sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[100] focus:block focus:rounded-lg focus:bg-cosmic-accent focus:px-4 focus:py-2 focus:text-white focus:outline-none focus:ring-2 focus:ring-white"
-        >
-          Skip to chat
-        </a>
+        {welcomeDone && <FloatingAstronaut />}
 
         <header className="border-b border-white/10 bg-cosmic-deep/75 backdrop-blur-md" role="banner">
           <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-4 px-4 py-5">
             <div>
-              <h1 className="neon-text font-display text-2xl font-bold tracking-tight md:text-3xl">Cosmo</h1>
+              <h1 className="neon-text cosmo-wobble font-display text-2xl font-bold tracking-tight md:text-3xl">Cosmo</h1>
               <p className="mt-1 max-w-xl text-sm text-slate-400">
                 Your live space companion. Cosmo uses real sky data when it can — then answers in words that fit your
                 age.
@@ -97,16 +131,30 @@ export default function App() {
         </header>
 
         <main id="main" tabIndex={-1}>
-          <div className="mx-auto max-w-6xl px-4 pt-6">
+          {/* ── Hero: Chat fills the first screen ── */}
+          <section className="flex min-h-[calc(100vh-72px)] flex-col justify-center">
+            <Chat audioMode={audioMode} onMessagesChange={setChatMessages} />
+          </section>
+
+          {/* ── Scroll destination: flip cards + video links ── */}
+          <div className="mx-auto max-w-6xl space-y-8 px-4 pb-20 pt-4">
             <DidYouKnow />
+            <NasaVideoLinks />
           </div>
-          <Chat audioMode={audioMode} />
         </main>
 
-        <footer className="border-t border-white/10 py-6 text-center text-xs text-slate-500" role="contentinfo">
+        <footer className="border-t border-white/10 py-20 text-center text-xs text-slate-500" role="contentinfo">
           Live data: Open-Notify & NASA APIs. No accounts. Built for ASU Hacks.
         </footer>
       </div>
+
+      <FeatureBar active={activeFeature} onToggle={setActiveFeature} />
+
+      {activeFeature === "draw" && <SpaceDrawingModal onClose={() => setActiveFeature(null)} />}
+      {activeFeature === "sky" && <TonightsSkyPanel onClose={() => setActiveFeature(null)} />}
+      {activeFeature === "journal" && (
+        <SpaceJournalModal currentMessages={chatMessages} onClose={() => setActiveFeature(null)} />
+      )}
     </div>
   );
 }
