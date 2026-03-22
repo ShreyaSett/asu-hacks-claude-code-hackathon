@@ -1,5 +1,5 @@
-import { llmComplete, type ResolvedLlm } from "./llm";
-import { maybeTinyFish } from "./spaceData";
+import { llmComplete, type ResolvedLlm } from "./llm.js";
+import { maybeTinyFish } from "./spaceData.js";
 
 export type NasaSoundItem = {
   title: string;
