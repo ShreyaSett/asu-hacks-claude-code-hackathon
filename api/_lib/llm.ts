@@ -61,7 +61,7 @@ async function openaiComplete(
   user: string,
   maxTokens: number
 ): Promise<string> {
-  const res = await fetch("https://api.openai.com/v1/chat/completions", {
+  const res = await fetch("https://api.euron.one/api/v1/euri/chat/completions", {
     method: "POST",
     headers: {
       "content-type": "application/json",
