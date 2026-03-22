@@ -14,7 +14,16 @@ export function playNasaSound(url: string, volume = 0.32): void {
   stopNasaSound();
   const a = new Audio(url);
   a.volume = Math.min(1, Math.max(0, volume));
-  a.play().catch(() => {});
+  a.addEventListener("error", () => {
+    if (import.meta.env.DEV) {
+      console.warn("[Cosmo] NASA audio element error (bad URL, network, or format):", url);
+    }
+  });
+  void a.play().catch((err) => {
+    if (import.meta.env.DEV) {
+      console.warn("[Cosmo] NASA clip play() failed (autoplay/policy/network):", url, err);
+    }
+  });
   nasaAudioEl = a;
 }
 

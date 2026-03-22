@@ -7,7 +7,12 @@ import {
   resolveLlm,
 } from "./_lib/llm";
 import { CLASSIFIER_SYSTEM, buildCosmoSystem, liveDataBlock } from "./_lib/prompts";
-import { curateNasaSoundForQuestion, fetchNasaSoundsViaTinyFish } from "./_lib/nasaSoundCurator";
+import {
+  FALLBACK_NASA_SOUND_CATALOG,
+  curateNasaSoundForQuestion,
+  fetchNasaSoundsViaTinyFish,
+  mergeNasaSoundPools,
+} from "./_lib/nasaSoundCurator";
 import {
   type FetchFocus,
   type LiveSpaceBundle,
@@ -149,9 +154,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       tinyFishRaw = await maybeTinyFish(classified.query || message, classified.sources);
     }
 
-    const soundItems = await nasaSoundsPromise;
-    const nasaSound =
-      soundItems.length > 0 ? await curateNasaSoundForQuestion(llm, message, soundItems) : null;
+    const fromTinyFish = await nasaSoundsPromise;
+    const soundItems = mergeNasaSoundPools(fromTinyFish, FALLBACK_NASA_SOUND_CATALOG);
+    const nasaSound = await curateNasaSoundForQuestion(llm, message, soundItems);
 
     const userPayload = [
       `Child question: ${message}`,
