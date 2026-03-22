@@ -12,7 +12,7 @@ import {
   curateNasaSoundForQuestion,
   fetchNasaSoundsViaTinyFish,
   mergeNasaSoundPools,
-} from "./_lib/nasaSoundCurator";
+} from "./_lib/nasaSoundCurator.js";
 import {
   type FetchFocus,
   type LiveSpaceBundle,
