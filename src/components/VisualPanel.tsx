@@ -77,11 +77,18 @@ export function VisualPanel({ visuals, audioMode }: Props) {
             {mars.rover} · Earth date {mars.earthDate}
           </p>
           {!audioMode && (
-            <img
-              src={mars.url}
-              alt={`Latest photo from the ${mars.rover} rover on Mars`}
-              className="max-h-56 w-full rounded-lg object-cover object-center"
-            />
+            <div className="mars-polaroid">
+              <div className="mars-polaroid-inner">
+                <img
+                  src={mars.url}
+                  alt={`Latest photo from the ${mars.rover} rover on Mars`}
+                  className="mars-polaroid-img"
+                />
+              </div>
+              <p className="mars-polaroid-caption">
+                {mars.rover} · {mars.earthDate}
+              </p>
+            </div>
           )}
         </section>
       )}

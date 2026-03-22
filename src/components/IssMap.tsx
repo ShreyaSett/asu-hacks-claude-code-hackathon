@@ -26,14 +26,14 @@ type Props = {
 export function IssMap({ latitude, longitude, label }: Props) {
   return (
     <div
-      className="h-56 w-full overflow-hidden rounded-xl border border-white/10 shadow-glow md:h-64"
+      className="relative h-56 w-full overflow-hidden rounded-xl border border-white/10 shadow-glow md:h-64"
       role="img"
       aria-label={label || `Map showing ISS near latitude ${latitude.toFixed(1)}, longitude ${longitude.toFixed(1)}`}
     >
       <MapContainer
         center={[latitude, longitude]}
         zoom={3}
-        className="h-full w-full"
+        className="relative z-0 h-full w-full"
         scrollWheelZoom={false}
         worldCopyJump
       >
@@ -44,6 +44,9 @@ export function IssMap({ latitude, longitude, label }: Props) {
         <Recenter lat={latitude} lng={longitude} />
         <Marker position={[latitude, longitude]} icon={issIcon} />
       </MapContainer>
+      <div className="pointer-events-none absolute inset-0 z-[500] overflow-hidden rounded-xl">
+        <div className="iss-sat-trail" aria-hidden="true" />
+      </div>
     </div>
   );
 }

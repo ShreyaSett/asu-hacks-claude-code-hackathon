@@ -1,11 +1,16 @@
-import { useCallback, useEffect, useId, useRef, useState } from "react";
+import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
 import { sendCosmoMessage, requestParentSummary } from "@/lib/api";
 import type { ChatMessage, CosmoVisuals } from "@/lib/types";
-import { speakText, startListening, stopSpeaking } from "@/lib/speech";
+import { playReplyWhoosh, playTypingBlip } from "@/lib/spaceSounds";
+import { playNasaSound, speakText, startListening, stopSpeaking } from "@/lib/speech";
+import { ConfettiBurst } from "./ConfettiBurst";
+import { ConstellationLayer } from "./ConstellationLayer";
+import { CosmoBuddy } from "./CosmoBuddy";
 import { VisualPanel } from "./VisualPanel";
+import { WarpWait } from "./WarpWait";
 
-const NAME_KEY = "cosmo_child_name";
-const AGE_KEY = "cosmo_age";
+/** Default when name/age UI is hidden — API still personalizes tone for ~this age. */
+const DEFAULT_AGE = 7;
 
 function uid() {
   return `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
@@ -23,30 +28,33 @@ export function Chat({ audioMode }: Props) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [visuals, setVisuals] = useState<CosmoVisuals>(emptyVisuals);
-  const [childName, setChildName] = useState(() => localStorage.getItem(NAME_KEY) || "");
-  const [age, setAge] = useState(() => Number(localStorage.getItem(AGE_KEY)) || 7);
   const [speaking, setSpeaking] = useState(false);
   const [parentOpen, setParentOpen] = useState(false);
   const [parentText, setParentText] = useState("");
   const [parentLoading, setParentLoading] = useState(false);
   const [llmProvider, setLlmProvider] = useState<string | null>(null);
   const liveRef = useRef<HTMLDivElement>(null);
+  const typingBlipTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [confettiTick, setConfettiTick] = useState(0);
   const inputId = useId();
-  const nameId = useId();
-  const ageId = useId();
-
-  useEffect(() => {
-    if (childName) localStorage.setItem(NAME_KEY, childName);
-    else localStorage.removeItem(NAME_KEY);
-  }, [childName]);
-
-  useEffect(() => {
-    localStorage.setItem(AGE_KEY, String(age));
-  }, [age]);
 
   useEffect(() => {
     liveRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
   }, [messages, loading]);
+
+  useEffect(() => {
+    return () => {
+      if (typingBlipTimer.current) clearTimeout(typingBlipTimer.current);
+    };
+  }, []);
+
+  const showConstellation = useMemo(() => {
+    const lastUser = [...messages].reverse().find((m) => m.role === "user")?.text ?? "";
+    const t = `${lastUser} ${input}`.toLowerCase();
+    return /\b(star|stars|constellation|constellations|galaxy|galaxies|nebula|nebulae|night sky|twinkle|orion|milky way)\b/.test(
+      t
+    );
+  }, [messages, input]);
 
   const pushMessage = useCallback((role: "user" | "cosmo", text: string) => {
     setMessages((m) => [...m, { id: uid(), role, text }]);
@@ -57,18 +65,27 @@ export function Chat({ audioMode }: Props) {
       const trimmed = text.trim();
       if (!trimmed || loading) return;
       setError(null);
+      const words = trimmed.split(/\s+/).filter(Boolean);
+      const goodQuestion =
+        trimmed.length > 18 || /\?/.test(trimmed) || words.length >= 6 || /\b(why|how|what if)\b/i.test(trimmed);
+      if (goodQuestion) setConfettiTick((n) => n + 1);
+
       pushMessage("user", trimmed);
       setInput("");
       setLoading(true);
       try {
         const res = await sendCosmoMessage({
           message: trimmed,
-          childName: childName.trim() || undefined,
-          age,
+          age: DEFAULT_AGE,
         });
         pushMessage("cosmo", res.reply);
+        void playReplyWhoosh();
         setVisuals(res.visuals);
         if (res.meta.llmProvider) setLlmProvider(res.meta.llmProvider);
+        const ns = res.meta.nasaSound;
+        if (ns?.url) {
+          playNasaSound(ns.url, audioMode ? 0.22 : 0.38);
+        }
         if (audioMode) {
           setSpeaking(true);
           speakText(res.reply, () => setSpeaking(false));
@@ -79,7 +96,7 @@ export function Chat({ audioMode }: Props) {
         setLoading(false);
       }
     },
-    [age, audioMode, childName, loading, pushMessage]
+    [audioMode, loading, pushMessage]
   );
 
   const onSubmit = (e: React.FormEvent) => {
@@ -122,43 +139,15 @@ export function Chat({ audioMode }: Props) {
     }
   };
 
+  const buddyMood = error ? "error" : loading ? "thinking" : messages.length > 0 ? "celebrate" : "welcome";
+
   return (
     <div className="mx-auto flex max-w-6xl flex-col gap-6 px-4 pb-16 pt-6 md:flex-row md:items-start">
-      <div className="min-w-0 flex-1">
-        <div
-          className="mb-4 flex flex-wrap items-end gap-4 rounded-2xl border border-white/10 bg-cosmic-deep/60 p-4"
-          role="region"
-          aria-label="Your settings"
-        >
-          <div className="flex flex-col gap-1">
-            <label htmlFor={nameId} className="text-xs font-medium text-slate-400">
-              Your name (optional, stays on this device)
-            </label>
-            <input
-              id={nameId}
-              type="text"
-              value={childName}
-              onChange={(e) => setChildName(e.target.value)}
-              maxLength={40}
-              className="w-48 rounded-lg border border-white/15 bg-cosmic-void px-3 py-2 text-sm text-white outline-none ring-cosmic-accent focus:ring-2"
-              autoComplete="nickname"
-            />
-          </div>
-          <div className="flex flex-col gap-1">
-            <label htmlFor={ageId} className="text-xs font-medium text-slate-400">
-              Age (for how Cosmo explains)
-            </label>
-            <input
-              id={ageId}
-              type="number"
-              min={4}
-              max={12}
-              value={age}
-              onChange={(e) => setAge(Number(e.target.value) || 7)}
-              className="w-24 rounded-lg border border-white/15 bg-cosmic-void px-3 py-2 text-sm text-white outline-none ring-cosmic-accent focus:ring-2"
-            />
-          </div>
-        </div>
+      <ConstellationLayer active={showConstellation} />
+      <ConfettiBurst key={confettiTick} tick={confettiTick} />
+
+      <div className="min-w-0 max-w-lg flex-1">
+        <CosmoBuddy mood={buddyMood} onTryPrompt={(prompt) => setInput(prompt)} />
 
         {llmProvider === "mock" && (
           <p
@@ -174,7 +163,7 @@ export function Chat({ audioMode }: Props) {
         )}
 
         <div
-          className="mb-3 min-h-[280px] max-h-[min(55vh,520px)] overflow-y-auto rounded-2xl border border-white/10 bg-cosmic-deep/40 p-4 md:min-h-[360px]"
+          className="mb-3 min-h-[140px] max-h-[min(32vh,240px)] overflow-y-auto rounded-2xl border border-white/10 bg-cosmic-deep/40 p-3 md:min-h-[160px] md:max-h-[min(36vh,280px)]"
           role="log"
           aria-live="polite"
           aria-relevant="additions"
@@ -189,25 +178,21 @@ export function Chat({ audioMode }: Props) {
             {messages.map((m) => (
               <li key={m.id}>
                 <div
-                  className={`rounded-xl px-4 py-3 ${
+                  className={`rounded-lg px-3 py-2 ${
                     m.role === "user"
-                      ? "ml-8 border border-violet-500/30 bg-violet-950/40"
-                      : "mr-4 border border-amber-200/20 bg-amber-950/20"
+                      ? "ml-6 border border-violet-500/30 bg-violet-950/40"
+                      : "mr-3 border border-amber-200/20 bg-amber-950/20"
                   }`}
                 >
                   <p className="text-xs font-medium uppercase tracking-wide text-slate-500">
                     {m.role === "user" ? "You" : "Cosmo"}
                   </p>
-                  <p className="mt-1 whitespace-pre-wrap text-slate-100">{m.text}</p>
+                  <p className="mt-0.5 whitespace-pre-wrap text-sm text-slate-100">{m.text}</p>
                 </div>
               </li>
             ))}
           </ul>
-          {loading && (
-            <p className="mt-4 animate-pulse text-cosmic-glow" aria-busy="true">
-              Cosmo is thinking…
-            </p>
-          )}
+          {loading && <WarpWait />}
           <div ref={liveRef} />
         </div>
 
@@ -224,9 +209,16 @@ export function Chat({ audioMode }: Props) {
             </label>
             <textarea
               id={inputId}
-              rows={2}
+              rows={1}
               value={input}
-              onChange={(e) => setInput(e.target.value)}
+              onChange={(e) => {
+                const v = e.target.value;
+                setInput(v);
+                if (typingBlipTimer.current) clearTimeout(typingBlipTimer.current);
+                typingBlipTimer.current = setTimeout(() => {
+                  void playTypingBlip();
+                }, 110);
+              }}
               onKeyDown={(e) => {
                 if (e.key === "Enter" && !e.shiftKey) {
                   e.preventDefault();
@@ -234,7 +226,7 @@ export function Chat({ audioMode }: Props) {
                 }
               }}
               placeholder="Ask Cosmo anything about space…"
-              className="w-full resize-y rounded-xl border border-white/15 bg-cosmic-void px-4 py-3 text-base text-white outline-none ring-cosmic-accent placeholder:text-slate-500 focus:ring-2"
+              className="w-full resize-y rounded-xl border border-white/15 bg-cosmic-void px-3 py-2 text-sm text-white outline-none ring-cosmic-accent placeholder:text-slate-500 focus:ring-2"
               disabled={loading}
             />
           </div>
@@ -242,7 +234,7 @@ export function Chat({ audioMode }: Props) {
             <button
               type="submit"
               disabled={loading || !input.trim()}
-              className="rounded-xl bg-cosmic-accent px-5 py-3 font-display font-semibold text-white shadow-glow transition hover:bg-violet-600 disabled:opacity-40"
+              className="btn-neon rounded-xl px-5 py-3 font-display font-semibold disabled:opacity-40"
             >
               Send
             </button>

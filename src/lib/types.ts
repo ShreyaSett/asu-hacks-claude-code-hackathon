@@ -19,6 +19,13 @@ export type CosmoVisuals = {
   } | null;
 };
 
+export type CosmoNasaSound = {
+  title: string;
+  url: string;
+  description?: string;
+  category?: string;
+};
+
 export type CosmoResponse = {
   reply: string;
   meta: {
@@ -30,6 +37,8 @@ export type CosmoResponse = {
     hasCrew?: boolean;
     hasMars?: boolean;
     tinyFishUsed?: boolean;
+    /** TinyFish + LLM/heuristic picked NASA clip (https on nasa.gov only). */
+    nasaSound?: CosmoNasaSound | null;
   };
   visuals: CosmoVisuals;
 };

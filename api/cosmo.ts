@@ -7,12 +7,23 @@ import {
   resolveLlm,
 } from "./_lib/llm";
 import { CLASSIFIER_SYSTEM, buildCosmoSystem, liveDataBlock } from "./_lib/prompts";
+import { curateNasaSoundForQuestion, fetchNasaSoundsViaTinyFish } from "./_lib/nasaSoundCurator";
 import {
   type FetchFocus,
   type LiveSpaceBundle,
   gatherLiveData,
   maybeTinyFish,
 } from "./_lib/spaceData";
+
+function tinyFishConfigured(): boolean {
+  return Boolean(process.env.TINYFISH_API_URL?.trim() && process.env.TINYFISH_API_KEY?.trim());
+}
+
+function tinyFishNasaSoundsEnabled(): boolean {
+  if (!tinyFishConfigured()) return false;
+  const v = (process.env.TINYFISH_NASA_SOUNDS || "true").toLowerCase().trim();
+  return v !== "0" && v !== "false" && v !== "no";
+}
 
 const PARENT_SUMMARY_SYSTEM = `You are helping parents understand what happened in a short chat between their child and Cosmo, a space companion AI.
 Write a concise, neutral summary: 5 short bullet points max. No blame, no clinical tone. Note any big curiosity themes. Do not include private instructions.`;
@@ -111,6 +122,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return res.status(400).json({ error: "message is required" });
     }
 
+    const nasaSoundsPromise = tinyFishNasaSoundsEnabled()
+      ? fetchNasaSoundsViaTinyFish(message)
+      : Promise.resolve([]);
+
     let classified: ClassifierOut;
     if (llm.provider === "mock") {
       const h = heuristicClassify(message);
@@ -133,6 +148,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       liveBundle = await gatherLiveData(fetchList, nasaKey);
       tinyFishRaw = await maybeTinyFish(classified.query || message, classified.sources);
     }
+
+    const soundItems = await nasaSoundsPromise;
+    const nasaSound =
+      soundItems.length > 0 ? await curateNasaSoundForQuestion(llm, message, soundItems) : null;
 
     const userPayload = [
       `Child question: ${message}`,
@@ -161,6 +180,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         hasCrew: Boolean(bundle.crew),
         hasMars: Boolean(bundle.mars?.latestPhotoUrl),
         tinyFishUsed: Boolean(tinyFishRaw),
+        nasaSound: nasaSound
+          ? {
+              title: nasaSound.title,
+              url: nasaSound.url,
+              description: nasaSound.description,
+              category: nasaSound.category,
+            }
+          : null,
       },
       visuals: {
         apod: bundle.apod

@@ -55,6 +55,17 @@ Web app for kids: chat with **Cosmo**, who answers with **live space data** (ISS
 
 If you have a TinyFish HTTP integration, set `TINYFISH_API_URL` and `TINYFISH_API_KEY`. The template posts to `{TINYFISH_API_URL}/run` with `{ goal, urls }` — **adjust** `api/_lib/spaceData.ts` → `maybeTinyFish` to match the real API.
 
+### NASA sounds (TinyFish + LLM)
+
+When TinyFish is configured, each chat can also:
+
+1. Ask TinyFish to extract a JSON list of clips from [NASA audio & ringtones](https://www.nasa.gov/audio-and-ringtones/) (goal in `api/_lib/nasaSoundCurator.ts`).
+2. **LLM picks** the best clip for the child’s question (or a **keyword heuristic** in demo / mock mode).
+3. The API returns `meta.nasaSound` `{ title, url }` (URLs must be `https` on `*.nasa.gov`).
+4. The **browser plays** the clip with `<audio>` while **Audio-first mode** still uses the **Web Speech API** for Cosmo’s spoken reply (clip volume is lowered so voice stays clear).
+
+Set `TINYFISH_NASA_SOUNDS=false` to turn this off. **Stop voice** stops both TTS and the NASA clip.
+
 ## Accessibility
 
 - Skip link, `aria-live` chat log, labeled controls

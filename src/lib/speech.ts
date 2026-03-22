@@ -1,3 +1,23 @@
+let nasaAudioEl: HTMLAudioElement | null = null;
+
+export function stopNasaSound() {
+  if (nasaAudioEl) {
+    nasaAudioEl.pause();
+    nasaAudioEl.src = "";
+    nasaAudioEl = null;
+  }
+}
+
+/** Play a NASA-hosted clip (low volume so Web Speech TTS stays readable). */
+export function playNasaSound(url: string, volume = 0.32): void {
+  if (typeof window === "undefined") return;
+  stopNasaSound();
+  const a = new Audio(url);
+  a.volume = Math.min(1, Math.max(0, volume));
+  a.play().catch(() => {});
+  nasaAudioEl = a;
+}
+
 export function speakText(text: string, onEnd?: () => void): SpeechSynthesisUtterance | null {
   if (typeof window === "undefined" || !window.speechSynthesis) {
     onEnd?.();
@@ -21,6 +41,7 @@ export function speakText(text: string, onEnd?: () => void): SpeechSynthesisUtte
 }
 
 export function stopSpeaking() {
+  stopNasaSound();
   if (typeof window !== "undefined" && window.speechSynthesis) {
     window.speechSynthesis.cancel();
   }
