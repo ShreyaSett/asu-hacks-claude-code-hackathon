@@ -6,13 +6,13 @@ import {
   mockParentSummary,
   resolveLlm,
 } from "./_lib/llm.js";
-import { CLASSIFIER_SYSTEM, buildCosmoSystem, liveDataBlock } from "./_lib/prompts";
+import { CLASSIFIER_SYSTEM, buildCosmoSystem, liveDataBlock } from "./_lib/prompts.js";
 import {
   FALLBACK_NASA_SOUND_CATALOG,
   curateNasaSoundForQuestion,
   fetchNasaSoundsViaTinyFish,
   mergeNasaSoundPools,
-} from "./_lib/nasaSoundCurator.js";
+} from "./_lib/nasaSoundCurator";
 import {
   type FetchFocus,
   type LiveSpaceBundle,
